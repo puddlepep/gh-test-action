@@ -1,0 +1,7 @@
+token_url: "https://authn.turbine.netrise.io/oauth/token"
+client_secret: "GBCChAVBwzIA6pYD1QRZe-rv8lRQWGZobkWmI4zIGnmCkJ1oFS5goxtMrERCypUc"
+audience: "https://prod.turbine.netrise.io/"
+client_id: "rPIrioDkREbfw3KjCt6E8XpM720h02zg"
+organization_id: "org_ibIb4R2MUfDF7GpO"
+endpoint: "https://apollo.turbine.netrise.io"
+enable_ssl: False

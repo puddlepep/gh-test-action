@@ -2,16 +2,23 @@
 on: [push]
 
 jobs:
-  hello_world_job:
+  submit_artifact:
     runs-on: ubuntu-latest
-    name: A job to say hello
+    name: Submits an artifact to NetRise
     steps:
-      - uses: actions/checkout@v4
-      - id: foo
-        uses: puddlepep/netrise-gh-action@5788563915986cfcb766c7f3c5b4b324bacd057f
-        with:
-          who-to-greet: 'pep!'
-      - run: echo random-number "$RANDOM_NUMBER"
-        shell: bash
-        env:
-          RANDOM_NUMBER: ${{ steps.foo.outputs.random-number }}
+      - uses: puddlepep/netrise-gh-action
+
+# jobs:
+#   hello_world_job:
+#     runs-on: ubuntu-latest
+#     name: A job to say hello
+#     steps:
+#       - uses: actions/checkout@v4
+#       - id: foo
+#         uses: puddlepep/netrise-gh-action@
+#         with:
+#           who-to-greet: 'pep!'
+#       - run: echo random-number "$RANDOM_NUMBER"
+#         shell: bash
+#         env:
+#           RANDOM_NUMBER: ${{ steps.foo.outputs.random-number }}

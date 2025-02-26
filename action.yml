@@ -1,35 +1,47 @@
-name: 'Hello World'
-description: 'Greet someone'
+name: 'NetRise Uploader'
+description: 'Upload a software artifact to NetRise for processing.'
 inputs:
-  who-to-greet:  # id of input
-    description: 'Who to greet'
+  config-path:
+    description: 'Path to the NetRise configuration file'
     required: true
-    default: 'World'
+
+  artifact-path:
+    description: 'Path to the software artifact to upload to NetRise'
+    required: true
+
+  name:
+    description: 'Asset name'
+    required: true
+
+  manufacturer:
+    description: 'Asset manufacturer'
+    required: false
+
+  model:
+    description: 'Asset model'
+    required: false
+
+  version:
+    description: 'Asset version'
+    required: false
+  
 outputs:
-  random-number:
-    description: "Random number"
-    value: ${{ steps.random-number-generator.outputs.random-number }}
+  upload-id:
+    description: 'Unique upload ID for this upload operation'
+
+  asset-id:
+    description: "The asset's ID in the system"
+
+  uploaded:
+    description: 'Boolean indicating if the upload is complete'
+  
 runs:
   using: "composite"
   steps:
-    - name: Set Greeting
-      run: echo "Hello $INPUT_WHO_TO_GREET."
-      shell: bash
-      env:
-        INPUT_WHO_TO_GREET: ${{ inputs.who-to-greet }}
-
-    - name: Random Number Generator
-      id: random-number-generator
-      run: echo "random-number=$(echo $RANDOM)" >> $GITHUB_OUTPUT
-      shell: bash
-
-    - name: Set GitHub Path
-      run: echo "$GITHUB_ACTION_PATH" >> $GITHUB_PATH
-      shell: bash
-      env:
-        GITHUB_ACTION_PATH: ${{ github.action_path }}
-
-    - name: Run goodbye.sh
-      run: goodbye.sh
-      shell: bash
-
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Submit Artifact
+      run: python submit.py
