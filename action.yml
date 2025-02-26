@@ -45,4 +45,5 @@ runs:
     
     - name: Submit Artifact
       run: python submit.py
+      shell: bash
 
