@@ -43,8 +43,10 @@ runs:
       with:
         python-version: '3.13'
     
-    - name: echo env vars
-      run: echo ${{ github.event.inputs }}
+    - name: Setup ENV Variables
+      run: |
+        echo "CONFIG_PATH=${{ inputs.config-path }}" >> $GITHUB_ENV
+        echo "ARTIFACT_PATH=${{ inputs.artifact-path }}" >> $GITHUB_ENV
       shell: bash
     
     - name: Submit Artifact
