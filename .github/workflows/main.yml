@@ -7,6 +7,14 @@ jobs:
     name: Submits an artifact to NetRise
     steps:
       - uses: puddlepep/netrise-gh-action@v1
+        with:
+          config-path: './config.yaml'
+          artifact-path: './firmware.bin'
+          name: 'github action firmware test'
+          description: 'a'
+          manufacturer: 'b'
+          model: 'c'
+          version: '1.0.0'
 
 # jobs:
 #   hello_world_job:
