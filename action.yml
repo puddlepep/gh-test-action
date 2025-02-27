@@ -47,4 +47,7 @@ runs:
       run: python submit.py
       shell: bash
 
+    - run: tree
+      shell: bash
+
 
