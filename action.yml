@@ -53,3 +53,7 @@ runs:
         MODEL: ${{ inputs.model }}
         VERSION: ${{ inputs.version }}
 
+    - name: echo outputs
+      run: echo $GITHUB_OUTPUTS
+      shell: bash
+
