@@ -43,6 +43,9 @@ runs:
       with:
         python-version: '3.13'
     
+    - name: echo env vars
+      run: echo ${{ github.event.inputs }}
+    
     - name: Submit Artifact
       run: python submit.py
       shell: bash
