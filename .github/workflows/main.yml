@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Submits an artifact to NetRise
     steps:
-      - uses: puddlepep/netrise-gh-action@v2
+      - uses: puddlepep/netrise-gh-action@v1
 
 # jobs:
 #   hello_world_job:
