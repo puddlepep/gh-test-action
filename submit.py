@@ -1,10 +1,12 @@
 import os
 
 
-def main():
+def add_output(key: str, value: str):
+    with open(os.envoron['GITHUB_OUTPUT'], 'a') as f:
+        print(f'{key}={value}', file=f)
 
-    for key in os.environ.keys():
-        print(f"{key}: {os.environ[key]}")
+
+def main():
 
     # collect required inputs
     config_path = os.getenv('CONFIG_PATH', None)
@@ -36,6 +38,10 @@ def main():
     print(f'Manufacturer: "{manufacturer}"') if manufacturer else ''
     print(f'Model: "{model}"') if model else ''
     print(f'Version: "{version}"') if version else ''
+
+    add_output('upload-id', 'abc')
+    add_output('asset-id', 'def')
+    add_output('uploaded', 'ghi')
 
 
 if __name__ == '__main__':

@@ -49,4 +49,7 @@ runs:
         CONFIG_PATH: ${{ inputs.config-path }}
         ARTIFACT_PATH: ${{ inputs.artifact-path }}
         NAME: ${{ inputs.name }}
+        MANUFACTURER: ${{ inputs.manufacturer }}
+        MODEL: ${{ inputs.model }}
+        VERSION: ${{ inputs.version }}
 
