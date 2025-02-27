@@ -1,10 +1,26 @@
 name: 'NetRise Uploader'
 description: 'Upload a software artifact to NetRise for processing.'
 inputs:
-  config-path:
-    description: 'Path to the NetRise configuration file'
-    required: true
 
+  token-url:
+    description: 'Authentication token for the SaaS platform'
+    required: true
+  client_secret:
+    description: 'auth0 client secret'
+    required: true
+  audience:
+    description: 'auth0 audience'
+    required: true
+  client-id:
+    description: 'auth0 client id'
+    required: true
+  organization-id:
+    description: 'NetRise Organization ID' 
+    required: true
+  endpoint:
+    description: 'API endpoint'
+    required: true
+  
   artifact-path:
     description: 'Path to the software artifact to upload to NetRise'
     required: true
@@ -38,6 +54,7 @@ outputs:
 runs:
   using: "composite"
   steps:
+
     - uses: actions/setup-python@v5
       with:
         python-version: '3.13'
@@ -47,7 +64,15 @@ runs:
       run: python submit.py
       shell: bash
       env:
-        CONFIG_PATH: ${{ inputs.config-path }}
+        # auth inputs
+        TOKEN_URL: ${{ inputs.token-url }}
+        CLIENT_SECRET: ${{ inputs.client-secret }}
+        AUDIENCE: ${{ inputs.audience }}
+        CLIENT_ID: ${{ inputs.client-id }}
+        ORGANIZATION_ID: ${{ inputs.organization-id }}
+        ENDPOINT: ${{ inputs.endpoint }}
+
+        # asset inputs
         ARTIFACT_PATH: ${{ inputs.artifact-path }}
         NAME: ${{ inputs.name }}
         MANUFACTURER: ${{ inputs.manufacturer }}

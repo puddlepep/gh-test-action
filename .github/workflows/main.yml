@@ -9,7 +9,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: puddlepep/netrise-gh-action@v1
         with:
-          config-path: './config.yaml'
+
+          # auth info
+          token-url: 'https://authn.turbine.netrise.io/oauth/token'
+          client-secret: 'GBCChAVBwzIA6pYD1QRZe-rv8lRQWGZobkWmI4zIGnmCkJ1oFS5goxtMrERCypUc'
+          audience: 'https://prod.turbine.netrise.io/'
+          client-id: 'rPIrioDkREbfw3KjCt6E8XpM720h02zg'
+          organization-id: 'org_ibIb4R2MUfDF7GpO'
+          endpoint: 'https://apollo.turbine.netrise.io'
+
+          # asset info
           artifact-path: './firmware.bin'
           name: 'github action firmware test'
           manufacturer: 'b'
