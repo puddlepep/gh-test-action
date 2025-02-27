@@ -2,7 +2,7 @@ import os
 
 
 def add_output(key: str, value: str):
-    with open(os.envoron['GITHUB_OUTPUT'], 'a') as f:
+    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
         print(f'{key}={value}', file=f)
 
 
