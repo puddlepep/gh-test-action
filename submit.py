@@ -3,6 +3,9 @@ import os
 
 def main():
 
+    for key in os.environ.keys():
+        print(f"{key}: {os.environ[key]}")
+
     # collect required inputs
     config_path = os.getenv('CONFIG_PATH', None)
     artifact_path = os.getenv('ARTIFACT_PATH', None)
