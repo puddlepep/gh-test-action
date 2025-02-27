@@ -43,6 +43,7 @@ runs:
         python-version: '3.13'
     
     - name: Submit Artifact
+      id: submit-artifact
       run: python submit.py
       shell: bash
       env:
@@ -55,8 +56,8 @@ runs:
 
     - name: echo outputs
       run: |
-        echo "upload-id: ${{ outputs.upload-id }}"
-        echo "asset-id: ${{ outputs.asset-id }}"
-        echo "uploaded: ${{ outputs.uploaded }}"
+        echo "upload-id: ${{ steps.submit-artifact.outputs.upload-id }}"
+        echo "asset-id: ${{ steps.submit-artifact.outputs.asset-id }}"
+        echo "uploaded: ${{ steps.submit-artifact.outputs.uploaded }}"
       shell: bash
 
