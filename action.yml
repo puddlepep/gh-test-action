@@ -5,7 +5,7 @@ inputs:
   token-url:
     description: 'Authentication token for the SaaS platform'
     required: true
-  client_secret:
+  client-secret:
     description: 'auth0 client secret'
     required: true
   audience:
