@@ -54,6 +54,9 @@ runs:
         VERSION: ${{ inputs.version }}
 
     - name: echo outputs
-      run: echo $GITHUB_OUTPUTS
+      run: |
+        echo "upload-id: ${{ outputs.upload-id }}"
+        echo "asset-id: ${{ outputs.asset-id }}"
+        echo "uploaded: ${{ outputs.uploaded }}"
       shell: bash
 
