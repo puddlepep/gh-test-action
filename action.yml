@@ -38,18 +38,15 @@ outputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v4
     - uses: actions/setup-python@v5
       with:
         python-version: '3.13'
     
-    - name: Setup ENV Variables
-      run: |
-        echo "CONFIG_PATH=${{ inputs.config-path }}" >> $GITHUB_ENV
-        echo "ARTIFACT_PATH=${{ inputs.artifact-path }}" >> $GITHUB_ENV
-      shell: bash
-    
     - name: Submit Artifact
       run: python submit.py
       shell: bash
+      env:
+        CONFIG_PATH: ${{ inputs.config-path }}
+        ARTIFACT_PATH: ${{ inputs.artifact-path }}
+        NAME: ${{ inputs.name }}
 

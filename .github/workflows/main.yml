@@ -6,6 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Submits an artifact to NetRise
     steps:
+      - uses: actions/checkout@v4
       - uses: puddlepep/netrise-gh-action@v1
         with:
           config-path: './config.yaml'
