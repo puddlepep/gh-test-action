@@ -59,6 +59,7 @@ runs:
       with:
         python-version: '3.13'
     - run: pip install -r requirements.txt
+      shell: bash
     
     - name: Submit Artifact
       id: submit-artifact
