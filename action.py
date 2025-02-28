@@ -36,7 +36,7 @@ def main():
         print(f'Version: "{version}"') if version else ''
 
     # submit and assign outputs
-    upload_id, asset_id, uploaded = submit(config, asset_name, manufacturer, model, version)
+    upload_id, asset_id, uploaded = submit(config, artifact_path, asset_name, manufacturer, model, version)
     add_output('upload-id', upload_id)
     add_output('asset-id', asset_id)
     add_output('uploaded', str(uploaded))

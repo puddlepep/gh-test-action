@@ -1,8 +1,9 @@
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
-from datetime import datetime
+from datetime import datetime, timedelta
 import requests
 import jwt
+import time
 
 
 class Config:
@@ -19,9 +20,9 @@ def submit(
     config: Config,
     path: str,
     name: str,
-    manufacturer: str = '',
-    model: str = '',
-    version: str = ''
+    manufacturer: str = "",
+    model: str = "",
+    version: str = ""
 ) -> (str, str, bool):
     """Returns a tuple of an upload id, asset id, and uploaded bool"""
 
@@ -52,8 +53,8 @@ def submit(
 
     headers = {
         "Authorization": "Bearer " + access_token,
-        "apollographql-client-name": self.org,
-        "apollographql-client-version": '0.8.3',
+        "apollographql-client-name": claims["https://netrise.io/org"],
+        "apollographql-client-version": "0.8.3",
     }
     client = Client(
         transport=AIOHTTPTransport(
@@ -91,7 +92,6 @@ def submit(
     upload_response = requests.put(
         submit_response["asset"]["submit"]["uploadUrl"],
         data=open(path, "rb").read(),
-        verify=self.config.enable_ssl,
     )
     upload_response.raise_for_status()
 
@@ -115,7 +115,7 @@ def submit(
     uploaded = False
     while not uploaded:
         time.sleep(2)
-        poll_response = self.execute(
+        poll_response = client.execute(
             poll_query,
             variable_values={
                 "args": {
