@@ -1,47 +1,130 @@
-import os
-from auth import Config, submit
+from gql import Client, gql
+from gql.transport.aiohttp import AIOHTTPTransport
+from datetime import datetime
+import requests
+import jwt
 
 
-def add_output(key: str, value: str):
-    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-        print(f'{key}={value}', file=f)
+class Config:
+    def __init__(self, token_url, client_secret, audience, client_id, organization_id, endpoint):
+        self.token_url = token_url
+        self.client_secret = client_secret
+        self.audience = audience
+        self.client_id = client_id
+        self.organization_id = organization_id
+        self.endpoint = endpoint
 
 
-def main():
+def submit(
+    config: Config,
+    path: str,
+    name: str,
+    manufacturer: str = '',
+    model: str = '',
+    version: str = ''
+) -> (str, str, bool):
+    """Returns a tuple of an upload id, asset id, and uploaded bool"""
 
-    # create config with auth inputs
-    config = Config(
-        os.environ['TOKEN_URL'],
-        os.environ['CLIENT_SECRET'],
-        os.environ['AUDIENCE'],
-        os.environ['CLIENT_ID'],
-        os.environ['ORGANIZATION_ID'],
-        os.environ['ENDPOINT']
+    # authenticate and create a gql client
+    payload = (
+        "grant_type=client_credentials&client_id="
+        + config.client_id
+        + "&client_secret="
+        + config.client_secret
+        + "&audience="
+        + config.audience
+        + "&organization="
+        + config.organization_id
     )
-    
-    # collect asset inputs
-    artifact_path = os.environ['ARTIFACT_PATH']
-    asset_name = os.environ['NAME']
-    manufacturer = os.getenv('MANUFACTURER', '')
-    model = os.getenv('MODEL', '')
-    version = os.getenv('VERSION', '')
-    
-    print('OK!')
-    print(f'Created config')
-    print(f'Submitting "{artifact_path}" as "{asset_name}"')
+    headers = {"content-type": "application/x-www-form-urlencoded"}
+    now = datetime.now()
+    resp = requests.post(
+        config.token_url,
+        data=payload,
+        headers=headers,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+    expires_in = now + timedelta(seconds=data["expires_in"])
 
-    if manufacturer or model or version:
-        print(f'Manufacturer: "{manufacturer}"') if manufacturer else ''
-        print(f'Model: "{model}"') if model else ''
-        print(f'Version: "{version}"') if version else ''
+    access_token = data["access_token"]
+    claims = jwt.decode(access_token, algorithms=["RS256"], options={"verify_signature": False})
 
-    # submit and assign outputs
-    upload_id, asset_id, uploaded = submit(config, asset_name, manufacturer, model, version)
-    add_output('upload-id', upload_id)
-    add_output('asset-id', asset_id)
-    add_output('uploaded', str(uploaded))
+    headers = {
+        "Authorization": "Bearer " + access_token,
+        "apollographql-client-name": self.org,
+        "apollographql-client-version": '0.8.3',
+    }
+    client = Client(
+        transport=AIOHTTPTransport(
+            url=f"{config.endpoint}/graphql/v3",
+            headers=headers,
+        ),
+        fetch_schema_from_transport=True,
+        execute_timeout=120,
+    )
+
+    # submit the artifact to NetRise
+    submit_response = client.execute(
+        gql(
+            """
+            mutation SubmitAsset($fileName: String!, $args: SubmitAssetInput) {
+                asset {
+                    submit(fileName: $fileName, args: $args) {
+                        uploadUrl
+                        uploadId
+                    }
+                }
+            }
+            """
+        ),
+        variable_values={
+            "fileName": path,
+            "args": {
+                "name": name,
+                "model": model,
+                "manufacturer": manufacturer,
+                "version": version
+            },
+        },
+    )
+    upload_response = requests.put(
+        submit_response["asset"]["submit"]["uploadUrl"],
+        data=open(path, "rb").read(),
+        verify=self.config.enable_ssl,
+    )
+    upload_response.raise_for_status()
+
+    # get asset ID
+    poll_query = gql(
+        """
+        query AssetUpload($args: AssetUploadInput) {
+            assetUpload(args: $args) {
+                uploadId
+                assetId
+                uploaded
+            }
+        }
+        """
+    )
+
+    upload_id = submit_response["asset"]["submit"]["uploadId"] 
+
+    # continually poll for asset ID until it is available
+    asset_id = ""
+    uploaded = False
+    while not uploaded:
+        time.sleep(2)
+        poll_response = self.execute(
+            poll_query,
+            variable_values={
+                "args": {
+                    "uploadId": upload_id
+                }
+            },
+        )
+        uploaded = poll_response["assetUpload"]["uploaded"]
+        asset_id = poll_response["assetUpload"]["assetId"]
 
 
-if __name__ == '__main__':
-    main()
-
+    return (upload_id, asset_id, uploaded)
