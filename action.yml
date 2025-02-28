@@ -63,7 +63,7 @@ runs:
     
     - name: Submit Artifact
       id: submit-artifact
-      run: python submit.py
+      run: python action.py
       shell: bash
       env:
         # auth inputs
