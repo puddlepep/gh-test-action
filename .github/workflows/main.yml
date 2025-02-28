@@ -1,5 +1,8 @@
-
-on: [push, workflow_dispatch]
+on:
+  push:
+    tags:
+      - v*
+  workflow_dispatch:
 
 jobs:
   submit_artifact:
