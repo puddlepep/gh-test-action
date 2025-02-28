@@ -26,6 +26,8 @@ def submit(
 ) -> (str, str, bool):
     """Returns a tuple of an upload id, asset id, and uploaded bool"""
 
+    print("Authenticating...")
+    
     # authenticate and create a gql client
     payload = (
         "grant_type=client_credentials&client_id="
@@ -44,12 +46,18 @@ def submit(
         data=payload,
         headers=headers,
     )
+    print("Requested authentication")
+    
     resp.raise_for_status()
+    
     data = resp.json()
     expires_in = now + timedelta(seconds=data["expires_in"])
 
     access_token = data["access_token"]
     claims = jwt.decode(access_token, algorithms=["RS256"], options={"verify_signature": False})
+
+    print("Successfully acquired authentication")
+    print("Creating GQL client")
 
     headers = {
         "Authorization": "Bearer " + access_token,
@@ -64,6 +72,9 @@ def submit(
         fetch_schema_from_transport=True,
         execute_timeout=120,
     )
+
+    print("Created GQL client")
+    print("Executing submit query")
 
     # submit the artifact to NetRise
     submit_response = client.execute(
@@ -89,11 +100,18 @@ def submit(
             },
         },
     )
+
+    print(f"Successfully executed submit query and obtained upload URL: {submit_response['asset']['submit']['uploadUrl']}")
+    print("Putting file to URL")
+    
     upload_response = requests.put(
         submit_response["asset"]["submit"]["uploadUrl"],
         data=open(path, "rb").read(),
     )
     upload_response.raise_for_status()
+
+    print("Successfully uploaded file")
+    print("Polling for asset ID")
 
     # get asset ID
     poll_query = gql(
@@ -115,6 +133,8 @@ def submit(
     uploaded = False
     while not uploaded:
         time.sleep(2)
+        print("...")
+
         poll_response = client.execute(
             poll_query,
             variable_values={
@@ -126,5 +146,9 @@ def submit(
         uploaded = poll_response["assetUpload"]["uploaded"]
         asset_id = poll_response["assetUpload"]["assetId"]
 
+    print("Obtained asset id!")
+    print(f"upload_id: {upload_id}")
+    print(f"asset_id: {asset_id}")
+    print(f"uploaded: {uploaded}")
 
     return (upload_id, asset_id, uploaded)
