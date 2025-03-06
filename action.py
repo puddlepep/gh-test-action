@@ -1,47 +1,94 @@
 import os
-from submit import Config, submit
+from auth import Config, create_client, submit, wait_for_processing
 
 
-def add_output(key: str, value: str):
-    with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-        print(f'{key}={value}', file=f)
+class Output:
+    def __init__(self):
+        self.asset_id = ''
+        self.upload_id = ''
+        self.uploaded = False
+
+    def write(self):
+        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+            print(f'asset-id={self.asset_id}', file=f)
+            print(f'upload-id={self.upload_id}', file=f)
+            print(f'uploaded={self.uploaded}', file=f)
+OUTPUT = Output()
+
+
+def error(msg: str, title: str = ""):
+    OUTPUT.write()
+    print(f"::error title={title}::{msg}")
+    raise SystemExit
+
+
+def get_input(env: str, required: bool):
+    value = os.getenv(env, None)
+
+    if value is None and required:
+        error(f"Input '{env}' is required.", "BAD INPUT")
+    return value
 
 
 def main():
 
     # create config with auth inputs
     config = Config(
-        os.environ['TOKEN_URL'],
-        os.environ['CLIENT_SECRET'],
-        os.environ['AUDIENCE'],
-        os.environ['CLIENT_ID'],
-        os.environ['ORGANIZATION_ID'],
-        os.environ['ENDPOINT']
+        get_input('TOKEN_URL', True),
+        get_input('CLIENT_SECRET', True),
+        get_input('AUDIENCE', True),
+        get_input('CLIENT_ID', True),
+        get_input('ORGANIZATION_ID', True),
+        get_input('ENDPOINT', True)
     )
-    
+
     # collect asset inputs
-    artifact_path = os.environ['ARTIFACT_PATH']
-    asset_name = os.environ['NAME']
-    manufacturer = os.getenv('MANUFACTURER', '')
-    model = os.getenv('MODEL', '')
-    version = os.getenv('VERSION', '')
+    artifact_path = get_input('ARTIFACT_PATH', True)
+    name = get_input('NAME', True)
+    manufacturer = get_input('MANUFACTURER', False)
+    model = get_input('MODEL', False)
+    version = get_input('VERSION', False)
     
-    print('OK!')
-    print(f'Created config')
-    print(f'Submitting "{artifact_path}" as "{asset_name}"')
+    # log OK and collected asset info
+    print("Inputs OK!")
+    print(f"Submitting '{artifact_path}' as '{asset_name}'")
+    if manufacturer: print(f"Manufacturer: '{manufacturer}'")
+    if model: print(f"Model: '{model}'")
+    if version: print(f"Version: '{version}'")
 
-    if manufacturer or model or version:
-        print(f'Manufacturer: "{manufacturer}"') if manufacturer else ''
-        print(f'Model: "{model}"') if model else ''
-        print(f'Version: "{version}"') if version else ''
-
+    # create gql client
+    try:
+        client = create_client(config)
+    except Exception as e:
+        error(str(e), f"Failed to create client: {e.__class__}")
+    print("Created client")
+    
     # submit and assign outputs
-    upload_id, asset_id, uploaded = submit(config, artifact_path, asset_name, manufacturer, model, version)
-    add_output('upload-id', upload_id)
-    add_output('asset-id', asset_id)
-    add_output('uploaded', str(uploaded))
+    try:
+        OUTPUT.upload_id, OUTPUT.asset_id, OUTPUT.uploaded = submit(client, artifact_path, asset_name, manufacturer, model, version)
+    except Exception as e:
+        error(str(e), f"Failed to submit asset: {e.__class__}")
+    if not OUTPUT.asset_id:
+        error("Failed to get asset ID")
+
+    # wait for the asset to finish processing and print the result
+    print("Waiting for asset to finish processing...")
+
+    try:
+        processed_successfully = wait_for_processing(client, asset_id)
+        if processed_successfully:
+            print("Asset successfully processed.")
+        else:
+            error("Failed to process asset")
+    except Exception as e:
+        error(str(e), e.__class__)
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        error(str(e), e.__class__)
+
+    OUTPUT.write()
 
