@@ -104,7 +104,7 @@ def submit(
             },
         },
     )
-    if submit_response.errors is not None:
+    if 'errors' in submit_response:
         raise SubmitAssetException(f"Failed to execute submit query: {submit_response.errors}")
 
     upload_id = submit_response["asset"]["submit"]["uploadId"] 
