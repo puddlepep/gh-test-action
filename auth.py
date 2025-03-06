@@ -62,6 +62,7 @@ def create_client(config: Config) -> Client:
         transport=AIOHTTPTransport(
             url=f"{config.endpoint}/graphql/v3",
             headers=headers,
+            ssl=True,
         ),
         fetch_schema_from_transport=True,
         execute_timeout=120,
