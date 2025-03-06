@@ -19,7 +19,7 @@ OUTPUT = Output()
 def error(msg: str, title: str = ""):
     OUTPUT.write()
     print(f"::error title={title}::{msg}")
-    raise SystemExit
+    exit(1)
 
 
 def get_input(env: str, required: bool):
@@ -51,7 +51,7 @@ def main():
     
     # log OK and collected asset info
     print("Inputs OK!")
-    print(f"Submitting '{artifact_path}' as '{asset_name}'")
+    print(f"Submitting '{artifact_path}' as '{name}'")
     if manufacturer: print(f"Manufacturer: '{manufacturer}'")
     if model: print(f"Model: '{model}'")
     if version: print(f"Version: '{version}'")
@@ -65,7 +65,7 @@ def main():
     
     # submit and assign outputs
     try:
-        OUTPUT.upload_id, OUTPUT.asset_id, OUTPUT.uploaded = submit(client, artifact_path, asset_name, manufacturer, model, version)
+        OUTPUT.upload_id, OUTPUT.asset_id, OUTPUT.uploaded = submit(client, artifact_path, name, manufacturer, model, version)
     except Exception as e:
         error(str(e), f"Failed to submit asset: {e.__class__}")
     if not OUTPUT.asset_id:
