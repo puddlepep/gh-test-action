@@ -75,7 +75,7 @@ def main():
     print("Waiting for asset to finish processing...")
 
     try:
-        processed_successfully = wait_for_processing(client, asset_id)
+        processed_successfully = wait_for_processing(client, OUTPUT.asset_id)
         if processed_successfully:
             print("Asset successfully processed.")
         else:
