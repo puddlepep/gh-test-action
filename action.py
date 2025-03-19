@@ -128,7 +128,7 @@ def main():
     
     # log OK and collected asset info
     print("Inputs OK!")
-    print(f"'{artifact_path}' will be submitted as '{name}'")
+    print(f"'{artifact_path.split('/')[-1]}' will be submitted as '{name}'")
     if manufacturer: print(f"Manufacturer: '{manufacturer}'")
     if model: print(f"Model: '{model}'")
     if version: print(f"Version: '{version}'")
