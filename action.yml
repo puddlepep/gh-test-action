@@ -47,15 +47,22 @@ outputs:
 runs:
   using: "composite"
   steps:
+
+    - uses: actions/checkout@v4
+      with:
+        repository: puddlepep/gh-test-action@v1
+        path: netrise-artifact-submitter
+    
     - uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    - run: pip install -r requirements.txt
-      shell: bash
-    
+
     - name: Submit Artifact
       id: submit-artifact
-      run: python action.py
+      run: |
+        cd netrise-artifact-submitter
+        pip install -r requirements.txt
+        python action.py
       shell: bash
       env:
         # auth inputs
@@ -67,7 +74,7 @@ runs:
         ENDPOINT: ${{ inputs.endpoint }}
 
         # asset inputs
-        ARTIFACT_PATH: ${{ inputs.artifact-path }}
+        ARTIFACT_PATH: ../${{ inputs.artifact-path }}
         NAME: ${{ inputs.name }}
         MANUFACTURER: ${{ inputs.manufacturer }}
         MODEL: ${{ inputs.model }}
