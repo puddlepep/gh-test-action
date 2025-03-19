@@ -50,8 +50,9 @@ runs:
 
     - uses: actions/checkout@v4
       with:
-        repository: puddlepep/gh-test-action@v1
+        repository: puddlepep/gh-test-action
         path: netrise-artifact-submitter
+        ref: v1
     
     - uses: actions/setup-python@v5
       with:
