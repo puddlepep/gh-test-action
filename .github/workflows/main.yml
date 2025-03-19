@@ -5,25 +5,25 @@ on:
   workflow_dispatch:
 
 jobs:
-  submit_artifact:
+  test:
     runs-on: ubuntu-latest
-    name: Submits an artifact to NetRise
+    name: Artifact Submitter Testing
     steps:
       - uses: actions/checkout@v4
-      - uses: puddlepep/netrise-gh-action@v1
+      - uses: actions/setup-python@v5
         with:
+          python-version: "3.13"
+      - run: pip install -r requirements.txt
+        shell: bash
 
-          # auth info
-          client-id: ${{ secrets.NETRISE_CLIENT_ID }}
-          client-secret: ${{ secrets.NETRISE_CLIENT_SECRET }}
-          organization-id: ${{ secrets.NETRISE_ORGANIZATION_ID }}
-          token-url: 'https://authn.turbine.netrise.io/oauth/token'
-          audience: 'https://prod.turbine.netrise.io/'
-          endpoint: 'https://apollo.turbine.netrise.io'
-
-          # asset info
-          artifact-path: './firmware.bin'
-          name: 'github action firmware test'
-          manufacturer: 'b'
-          model: 'c'
-          version: '1.0.0'
+      - id: submit-artifact-test
+        run: python tests.py
+        shell: bash
+        env:
+          CLIENT_ID: ${{ secrets.CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+          ORGANIZATION_ID: ${{ secrets.ORGANIZATION_ID }}
+          TOKEN_URL: ${{ secrets.TOKEN_URL }}
+          AUDIENCE: ${{ secrets.AUDIENCE }}
+          ENDPOINT: ${{ secrets.ENDPOINT }}
+      

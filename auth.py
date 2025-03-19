@@ -6,8 +6,16 @@ import jwt
 import time
 
 
-class AuthException(Exception): pass
-class SubmitAssetException(Exception): pass
+class DetailedException(Exception):
+    def __init__(self, message, detail=None):
+        self.message = message
+        self.detail = detail
+    def __str__(self):
+        return self.message
+    
+
+class AuthException(DetailedException): pass
+class SubmitAssetException(DetailedException): pass
 
 
 class Config:
@@ -48,8 +56,11 @@ def create_client(config: Config) -> Client:
         access_token = data["access_token"]
         claims = jwt.decode(access_token, algorithms=["RS256"], options={"verify_signature": False})
 
-    except requests.HTTPError as e:
-        raise AuthException(f"Failed to authenticate: {e}")
+    except Exception as e:
+        raise AuthException(
+            f"Failed to authenticate: {e} ({type(e).__name__})",
+            "An issue has occurred with authentication. Double-check your configuration inputs."
+        )
 
     print("Successfully authenticated")
 
@@ -106,7 +117,10 @@ def submit(
         },
     )
     if 'errors' in submit_response:
-        raise SubmitAssetException(f"Failed to execute submit query: {submit_response.errors}")
+        raise SubmitAssetException(
+            f"Failed to generate upload URL: {submit_response.errors}",
+            "An exception occurred trying to generate an upload URL for the asset. Double-check your authentication info. This could also be due to a network issue."
+        )
 
     upload_id = submit_response["asset"]["submit"]["uploadId"] 
 
@@ -117,7 +131,10 @@ def submit(
         )
         upload_response.raise_for_status()
     except requests.HTTPError as e:
-        raise SubmitAssetException(f"Failed to submit asset: {e}")
+        raise SubmitAssetException(
+            f"Failed to submit asset: {e}",
+            "An exception occurred trying to upload the asset to Turbine. This is likely due to a network issue."
+        )
 
     print("Successfully submitted asset")
 
@@ -152,6 +169,12 @@ def submit(
             uploaded = poll_response["assetUpload"]["uploaded"]
             asset_id = poll_response["assetUpload"]["assetId"]
     except Exception as e: pass
+
+    if not asset_id:
+        raise SubmitAssetException(
+            "Asset submitted, but failed to get asset ID",
+            "The asset was successfully submitted to NetRise for processing, but the action failed to get its asset ID."
+        )
 
     return (upload_id, asset_id, uploaded)
 

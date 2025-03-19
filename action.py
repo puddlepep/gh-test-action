@@ -1,5 +1,11 @@
 import os
-from auth import Config, create_client, submit, wait_for_processing
+import time
+from functools import partial
+from auth import Config, create_client, submit, wait_for_processing, DetailedException
+
+
+class BadInputException(DetailedException): pass
+class ProcessingException(DetailedException): pass
 
 
 class Output:
@@ -9,30 +15,90 @@ class Output:
         self.uploaded = False
 
     def write(self):
-        with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-            print(f'asset-id={self.asset_id}', file=f)
-            print(f'upload-id={self.upload_id}', file=f)
-            print(f'uploaded={self.uploaded}', file=f)
+        if is_github_action():
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+                print(f'asset-id={self.asset_id}', file=f)
+                print(f'upload-id={self.upload_id}', file=f)
+                print(f'uploaded={self.uploaded}', file=f)
+        else:
+            os.environ["ASSET_ID"] = self.asset_id
+            os.environ["UPLOAD_ID"] = self.upload_id
+            os.environ["UPLOADED"] = str(self.uploaded)
 OUTPUT = Output()
 
 
-def error(msg: str, title: str = ""):
+def error(exception):
     OUTPUT.write()
-    print(f"::error title={title}::{msg}")
+    str_error(type(exception).__name__, str(exception))
+    if exception is DetailedException and exception.detail: print(exception.detail)
+    if type(exception) == TimeoutError:
+        print("A timeout has repeatedly occured. Please check your network conditions.")
+    print()
+    print("Check the README documentation for info about this exception.")
+    print("For further support, contact support@netrise.com")
     exit(1)
 
 
+def str_error(title, message):
+    if is_github_action():
+        print(f"::error title={title}::{message}")
+    else:
+        print(f"ERROR: {title}")
+        if message: print(message)
+
+
 def get_input(env: str, required: bool):
-    value = os.getenv(env, None)
+    upper = env.upper().replace("-", "_")
+    lower = env.lower().replace("_", "-")
+    if is_github_action():
+        input = lower
+    else:
+        input = upper
+    value = os.getenv(upper, None)
 
     if value is None and required:
-        error(f"Input '{env}' is required.", "BAD INPUT")
+        raise BadInputException(f"Input '{input}' is required.")
     return value
 
 
-def main():
+def retry(retries, function, *args, **kwargs):
+    """Retries a function `retries` times with exponential backoff"""
 
-    # create config with auth inputs
+    tries = 0
+    while True:
+        try:
+            return function(*args, **kwargs)
+        except Exception as e:
+            if tries == retries:
+                raise e
+
+            if is_github_action():
+                print(f"::warning title={type(e).__name__}::Retrying... ({tries+1}/{retries} retries)")
+            else:
+                print(f"ERROR: {type(e).__name__}: Retrying... ({tries+1}/{retries} retries)")
+            t = (2 * 2 ** tries)
+            time.sleep(t)
+            tries += 1
+
+
+def is_github_action():
+    return os.getenv("GITHUB_ACTIONS", False)
+
+
+def create_config():
+     
+    # first, check if a config.yaml exists and pull info from that
+    try:
+        with open("config.yaml", "r") as cf:
+            for line in cf:
+                name, value = line.split(":", 1)
+                name = name.upper().strip()
+                value = value.strip().replace('"', '')
+                os.environ[name] = value
+            print("Using authentication info from config.yaml")         
+    except Exception as e: print(e)
+    
+    # create the config
     config = Config(
         get_input('TOKEN_URL', True),
         get_input('CLIENT_SECRET', True),
@@ -42,34 +108,52 @@ def main():
         get_input('ENDPOINT', True)
     )
 
-    # collect asset inputs
-    artifact_path = get_input('ARTIFACT_PATH', True)
-    name = get_input('NAME', True)
-    manufacturer = get_input('MANUFACTURER', False)
-    model = get_input('MODEL', False)
-    version = get_input('VERSION', False)
+    return config
+
+
+def main():
+
+    try:
+        # create the config file
+        config = create_config()
+
+        # collect asset inputs
+        artifact_path = get_input('ARTIFACT_PATH', True)
+        name = get_input('NAME', True)
+        manufacturer = get_input('MANUFACTURER', False)
+        model = get_input('MODEL', False)
+        version = get_input('VERSION', False)
+    except BadInputException as e:
+        error(e)
     
     # log OK and collected asset info
     print("Inputs OK!")
-    print(f"Submitting '{artifact_path}' as '{name}'")
+    print(f"'{artifact_path}' will be submitted as '{name}'")
     if manufacturer: print(f"Manufacturer: '{manufacturer}'")
     if model: print(f"Model: '{model}'")
     if version: print(f"Version: '{version}'")
 
     # create gql client
     try:
-        client = create_client(config)
+        client = retry(5, create_client, config)
     except Exception as e:
-        error(str(e), f"Failed to create client: {e.__class__}")
+        error(e)
     print("Created client")
     
     # submit and assign outputs
     try:
-        OUTPUT.upload_id, OUTPUT.asset_id, OUTPUT.uploaded = submit(client, artifact_path, name, manufacturer, model, version)
+        OUTPUT.upload_id, OUTPUT.asset_id, OUTPUT.uploaded = retry(
+            5,
+            submit,
+            client,
+            artifact_path,
+            name,
+            manufacturer,
+            model,
+            version
+        )
     except Exception as e:
-        error(str(e), f"Failed to submit asset: {e.__class__}")
-    if not OUTPUT.asset_id:
-        error("Failed to get asset ID")
+        error(e)
 
     # wait for the asset to finish processing and print the result
     print("Waiting for asset to finish processing...")
@@ -77,18 +161,17 @@ def main():
     try:
         processed_successfully = wait_for_processing(client, OUTPUT.asset_id)
         if processed_successfully:
-            print("Asset successfully processed.")
+            print("Asset successfully processed")
         else:
-            error("Failed to process asset")
+            raise ProcessingException(
+                "Asset failed to process",
+                "The asset was successfully submitted, however it failed to finish processing."
+            )
     except Exception as e:
-        error(str(e), e.__class__)
+        error(e)
 
 
 if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        error(str(e), e.__class__)
-
+    main()
     OUTPUT.write()
 
